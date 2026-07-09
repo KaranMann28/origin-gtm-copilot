@@ -7,17 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "mcp": "tsx mcp/server.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.9",
     "@ai-sdk/react": "^4.0.19",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "ai": "^7.0.18",
     "dotenv": "^17.4.2",
     "next": "16.2.10",
     "openai": "^6.45.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
