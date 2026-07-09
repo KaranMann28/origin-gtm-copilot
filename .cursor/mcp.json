@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "origin-kb": {
+      "command": "npx",
+      "args": ["tsx", "mcp/server.ts"]
+    }
+  }
+}
