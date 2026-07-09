@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Origin GTM Copilot
 
-## Getting Started
+A RAG chatbot grounded in a knowledge base covering Cursor, Graphite, and Origin — the acquisition, the product fundamentals, the launch, the competitive landscape. Built as interview prep for the GTM Emerging Products role: the fastest way to internalize the story was to build on the exact stack the team sells.
 
-First, run the development server:
+## How it was built
+
+- Agent-first in Cursor: every file in this repo was written by Cursor's agent, from the ingestion script to the chat UI.
+- Shipped as a 4-PR stack via Graphite (`gt`): knowledge base → ingestion/embeddings → RAG chat API + UI → MCP server. Bugbot reviewed each PR before the stack merged.
+- Deployed on Vercel.
+
+## Architecture
+
+| Piece | What it does |
+| --- | --- |
+| `scripts/ingest.ts` | Reads `knowledge/*.md`, chunks on paragraph boundaries (~800 tokens, 100 overlap), embeds with `text-embedding-3-small`, writes `data/embeddings.json` |
+| `data/embeddings.json` | The entire vector store. No database — an array of `{ id, source, text, embedding }` |
+| `app/api/chat/route.ts` | Embeds the latest user message, cosine-ranks all chunks, feeds the top 5 to `gpt-4o-mini`, streams the answer with source attribution |
+| `mcp/server.ts` | Custom MCP server exposing `search_origin_kb` over stdio, so Cursor itself can query the knowledge base |
+
+## Stack
+
+Next.js 16 (App Router) · Vercel AI SDK v7 · OpenAI API · Graphite CLI · MCP TypeScript SDK
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+echo OPENAI_API_KEY=sk-... > .env.local
+npm run ingest   # builds data/embeddings.json
+npm run dev      # chat at http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## MCP setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run the server standalone with `npm run mcp`, or register it in Cursor via `.cursor/mcp.json`. On Windows, wrap the command in `cmd /c`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```json
+{
+  "mcpServers": {
+    "origin-kb": {
+      "command": "cmd",
+      "args": ["/c", "npx", "tsx", "mcp/server.ts"]
+    }
+  }
+}
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cursor will then expose a `search_origin_kb` tool that returns the top 5 matching chunks with source filenames and similarity scores.
